@@ -1,8 +1,8 @@
 package com.example.todoapppractice.di
 
 import androidx.room.Room
-import com.example.todoapppractice.data.db.SplitwiseDatabase
 import com.example.todoapppractice.data.datastore.SimplifyPreferences
+import com.example.todoapppractice.data.db.SplitwiseDatabase
 import com.example.todoapppractice.data.repository.BalanceRepository
 import com.example.todoapppractice.data.repository.ExpenseRepository
 import com.example.todoapppractice.data.repository.UserRepository

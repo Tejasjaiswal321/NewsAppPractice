@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -18,7 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
@@ -32,6 +37,8 @@ fun AddExpenseScreen(
     onParticipantChange: (Int, String) -> Unit,
     onAddExpense: () -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -41,8 +48,13 @@ fun AddExpenseScreen(
         LabelText("Expense")
         OutlinedTextField(
             value = state.expenseName,
+            singleLine = true,
             onValueChange = onExpenseNameChange,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -52,7 +64,13 @@ fun AddExpenseScreen(
             value = state.total,
             onValueChange = onTotalChange,
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+            ),
             placeholder = { Text("0") }
         )
 
@@ -62,7 +80,11 @@ fun AddExpenseScreen(
         OutlinedTextField(
             value = state.paidBy,
             onValueChange = onPaidByChange,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+            )
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -81,15 +103,7 @@ fun AddExpenseScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        state.participants.forEachIndexed { index, item ->
-            OutlinedTextField(
-                value = item,
-                onValueChange = { onParticipantChange(index, it) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 10.dp)
-            )
-        }
+        ParticipantsList(state, onParticipantChange, focusManager, onAddExpense)
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -100,6 +114,36 @@ fun AddExpenseScreen(
         ) {
             Text(if (state.isLoading) "Adding..." else "ADD")
         }
+    }
+}
+
+@Composable
+private fun ParticipantsList(
+    state: AddExpenseUiState,
+    onParticipantChange: (Int, String) -> Unit,
+    focusManager: FocusManager,
+    onAddExpense: () -> Unit
+) {
+    val lastIndex = state.participants.lastIndex
+    state.participants.forEachIndexed { index, item ->
+        val isLast = index == lastIndex
+        OutlinedTextField(
+            value = item,
+            onValueChange = { onParticipantChange(index, it) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 10.dp),
+            keyboardOptions = KeyboardOptions(
+                imeAction = if (isLast) ImeAction.Done else ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) },
+                onDone = {
+                    focusManager.clearFocus()
+                    onAddExpense()
+                }
+            )
+        )
     }
 }
 

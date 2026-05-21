@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -88,11 +87,11 @@ fun BalanceScreen(
 }
 
 @Composable
-private fun SimplifyToggle(isSimplifyOn:Boolean,onSimplifyToggle: () -> Unit) {
+private fun SimplifyToggle(isSimplifyOn: Boolean, onSimplifyToggle: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 12.dp,end = 12.dp, top = 8.dp),
+            .padding(start = 12.dp, end = 12.dp, top = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {

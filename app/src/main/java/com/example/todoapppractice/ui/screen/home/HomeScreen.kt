@@ -84,6 +84,7 @@ fun HomeScreen(
                 snackbarHostState = snackbarHostState,
                 onNavigateToPerson = onNavigateToPerson
             )
+
             2 -> HistoryTab(snackbarHostState = snackbarHostState)
         }
     }
