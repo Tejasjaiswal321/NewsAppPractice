@@ -18,6 +18,17 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+/**
+ * Sealed UI state that prevents illegal combinations
+ * (e.g. loading=true + data!=null, or loading=false + data=null).
+ */
+sealed interface PersonUiState {
+    object Loading : PersonUiState
+    data class Success(val person: PersonSummary) : PersonUiState
+    object Empty : PersonUiState
+    data class Error(val message: String) : PersonUiState
+}
+
 class PersonDetailViewModel(
     private val userId: Long,
     private val getPersonSummaryUseCase: GetPersonSummaryUseCase,
@@ -25,39 +36,45 @@ class PersonDetailViewModel(
     private val simplifyPreferences: SimplifyPreferences
 ) : ViewModel() {
 
-    private val _personSummary = MutableStateFlow<PersonSummary?>(null)
-    val personSummary: StateFlow<PersonSummary?> = _personSummary.asStateFlow()
-
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    private val _uiState = MutableStateFlow<PersonUiState>(PersonUiState.Loading)
+    val uiState: StateFlow<PersonUiState> = _uiState.asStateFlow()
 
     private val _uiEvents = MutableSharedFlow<UiEvent>()
     val uiEvents: SharedFlow<UiEvent> = _uiEvents.asSharedFlow()
 
     init {
-        // Re-load personSummary whenever simplify preference changes
+        // Re-load summary whenever simplify preference changes
         viewModelScope.launch {
             simplifyPreferences.isSimplifyOn.collectLatest { isSimplified ->
-                updatePersonSummary(isSimplified)
+                loadSummary(isSimplified)
             }
+        }
+    }
+
+    private suspend fun loadSummary(isSimplified: Boolean) {
+        _uiState.value = PersonUiState.Loading
+        try {
+            val summary = getPersonSummaryUseCase(userId, isSimplified)
+            _uiState.value = if (summary != null) {
+                PersonUiState.Success(summary)
+            } else {
+                PersonUiState.Empty
+            }
+        } catch (e: Exception) {
+            _uiState.value = PersonUiState.Error(e.message ?: "Unknown error")
         }
     }
 
     fun onSettleClicked(suggestion: SettlementSuggestion) {
         viewModelScope.launch {
-            settleBalanceUseCase(suggestion)
-            _uiEvents.emit(UiEvent.ShowSnackbar("Settled!"))
-            // Reload with current simplify state
-            val isSimplified = simplifyPreferences.isSimplifyOn.first()
-            updatePersonSummary(isSimplified)
+            try {
+                settleBalanceUseCase(suggestion)
+                _uiEvents.emit(UiEvent.ShowSnackbar("Settled!"))
+                val isSimplified = simplifyPreferences.isSimplifyOn.first()
+                loadSummary(isSimplified)
+            } catch (e: Exception) {
+                _uiEvents.emit(UiEvent.ShowSnackbar("Settlement failed: ${e.message}"))
+            }
         }
-    }
-
-    private suspend fun updatePersonSummary(
-        isSimplified: Boolean
-    ) {
-        _isLoading.value = true
-        _personSummary.value = getPersonSummaryUseCase(userId, isSimplified)
-        _isLoading.value = false
     }
 }

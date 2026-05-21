@@ -10,7 +10,4 @@ data class SettlementSuggestion(
     val toUserId: Long,
     val toName: String,
     val amountPaise: Long
-) {
-    val formattedAmount: String
-        get() = "%.2f".format(amountPaise / 100.0)
-}
+)

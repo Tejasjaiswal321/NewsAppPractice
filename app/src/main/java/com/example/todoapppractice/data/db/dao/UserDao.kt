@@ -22,6 +22,9 @@ interface UserDao {
     @Query("SELECT * FROM users ORDER BY display_name ASC")
     fun getAllFlow(): Flow<List<UserEntity>>
 
+    @Query("SELECT * FROM users ORDER BY display_name ASC")
+    suspend fun getAll(): List<UserEntity>
+
     /**
      * Get or create a user by display name.
      * Returns the user_id (existing or newly inserted).

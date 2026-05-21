@@ -1,6 +1,7 @@
 package com.example.todoapppractice.data.repository
 
 import com.example.todoapppractice.data.db.dao.ExpenseDao
+import com.example.todoapppractice.data.db.dao.ParticipationTuple
 import com.example.todoapppractice.data.db.entity.ExpenseEntity
 import com.example.todoapppractice.data.db.entity.ExpenseParticipantEntity
 import com.example.todoapppractice.data.db.relation.ExpenseWithParticipants
@@ -23,25 +24,24 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
         participantShares: List<Pair<Long, Long>>,
         createdAt: Long = System.currentTimeMillis()
     ): Long {
-        val expenseId = expenseDao.insertExpense(
-            ExpenseEntity(
-                title = title,
-                totalAmount = totalAmountPaise,
-                paidByUserId = paidByUserId,
-                createdAt = createdAt
-            )
+        val expense = ExpenseEntity(
+            title = title,
+            totalAmount = totalAmountPaise,
+            paidByUserId = paidByUserId,
+            createdAt = createdAt
         )
 
+        // expenseId=0 is a placeholder; the DAO's @Transaction method
+        // replaces it with the real auto-generated ID before inserting.
         val participantEntities = participantShares.map { (userId, owedAmount) ->
             ExpenseParticipantEntity(
-                expenseId = expenseId,
+                expenseId = 0,
                 participantUserId = userId,
                 owedAmount = owedAmount
             )
         }
-        expenseDao.insertParticipants(participantEntities)
 
-        return expenseId
+        return expenseDao.insertExpenseWithParticipants(expense, participantEntities)
     }
 
     suspend fun deleteExpense(expenseId: Long) {
@@ -53,4 +53,12 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
 
     suspend fun getAllExpensesWithParticipants(): List<ExpenseWithParticipants> =
         expenseDao.getAllExpensesWithParticipants()
+
+    /** Get all expenses paid by a specific user (with their participants). */
+    suspend fun getExpensesPaidByUser(userId: Long): List<ExpenseWithParticipants> =
+        expenseDao.getExpensesPaidByUser(userId)
+
+    /** Get all expense participations for a specific user (filtered, not full table). */
+    suspend fun getParticipationsForUser(userId: Long): List<ParticipationTuple> =
+        expenseDao.getParticipationsForUser(userId)
 }

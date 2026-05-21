@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.todoapppractice.domain.model.UserBalance
 import com.example.todoapppractice.ui.component.SplitBlue
+import com.example.todoapppractice.ui.util.CurrencyFormatter
 
 @Composable
 fun BalanceScreen(
@@ -74,7 +75,7 @@ fun BalanceScreen(
                             Text(text = item.displayName)
                         }
                         Text(
-                            text = item.formattedBalance,
+                            text = CurrencyFormatter.formatBalance(item.balancePaise),
                             fontWeight = FontWeight.Bold
                         )
                     }

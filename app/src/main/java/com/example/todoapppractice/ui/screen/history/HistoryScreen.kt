@@ -29,8 +29,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.todoapppractice.domain.model.HistoryItem
-import java.text.SimpleDateFormat
-import java.util.Date
+import com.example.todoapppractice.ui.util.CurrencyFormatter
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
@@ -95,7 +97,7 @@ private fun ExpenseCard(
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
-            text = "${item.formattedAmount} paid by ${item.paidByName}",
+            text = "${CurrencyFormatter.formatAmount(item.totalAmountPaise)} paid by ${item.paidByName}",
             fontSize = 14.sp,
             color = Color.DarkGray
         )
@@ -125,7 +127,7 @@ private fun SettlementCard(
         onDelete = { onDelete(item) }
     ) {
         Text(
-            text = "${item.fromName} paid ${item.formattedAmount} to ${item.toName}",
+            text = "${item.fromName} paid ${CurrencyFormatter.formatAmount(item.amountPaise)} to ${item.toName}",
             fontWeight = FontWeight.Bold,
             fontSize = 14.sp,
         )
@@ -181,7 +183,13 @@ private fun CrossButton(
 }
 
 
+private val formatter = DateTimeFormatter.ofPattern(
+    "MMM dd, hh:mm:ss a",
+    Locale.getDefault()
+)
+
 private fun formatTimestamp(millis: Long): String {
-    val sdf = SimpleDateFormat("MMM dd, hh:mm:ss a", Locale.getDefault())
-    return sdf.format(Date(millis))
+    return Instant.ofEpochMilli(millis)
+        .atZone(ZoneId.systemDefault())
+        .format(formatter)
 }

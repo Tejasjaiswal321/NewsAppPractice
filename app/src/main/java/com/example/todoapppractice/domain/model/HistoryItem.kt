@@ -18,9 +18,6 @@ sealed interface HistoryItem {
         override val createdAt: Long
     ) : HistoryItem {
         override val id: Long get() = expenseId
-
-        val formattedAmount: String
-            get() = "%.2f".format(totalAmountPaise / 100.0)
     }
 
     data class SettlementHistoryItem(
@@ -31,8 +28,5 @@ sealed interface HistoryItem {
         override val createdAt: Long
     ) : HistoryItem {
         override val id: Long get() = settlementId
-
-        val formattedAmount: String
-            get() = "%.2f".format(amountPaise / 100.0)
     }
 }

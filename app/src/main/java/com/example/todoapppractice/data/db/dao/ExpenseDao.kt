@@ -10,24 +10,39 @@ import com.example.todoapppractice.data.db.relation.ExpenseWithParticipants
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface ExpenseDao {
+abstract class ExpenseDao {
 
     @Insert
-    suspend fun insertExpense(expense: ExpenseEntity): Long
+    abstract suspend fun insertExpense(expense: ExpenseEntity): Long
 
     @Insert
-    suspend fun insertParticipants(participants: List<ExpenseParticipantEntity>)
+    abstract suspend fun insertParticipants(participants: List<ExpenseParticipantEntity>)
+
+    /**
+     * Atomically insert an expense and its participants.
+     * If either insert fails, the entire operation is rolled back.
+     */
+    @Transaction
+    open suspend fun insertExpenseWithParticipants(
+        expense: ExpenseEntity,
+        participants: List<ExpenseParticipantEntity>
+    ): Long {
+        val expenseId = insertExpense(expense)
+        val withExpenseId = participants.map { it.copy(expenseId = expenseId) }
+        insertParticipants(withExpenseId)
+        return expenseId
+    }
 
     @Query("DELETE FROM expenses WHERE expense_id = :expenseId")
-    suspend fun deleteExpense(expenseId: Long)
+    abstract suspend fun deleteExpense(expenseId: Long)
 
     @Transaction
     @Query("SELECT * FROM expenses ORDER BY created_at DESC")
-    fun getAllExpensesWithParticipantsFlow(): Flow<List<ExpenseWithParticipants>>
+    abstract fun getAllExpensesWithParticipantsFlow(): Flow<List<ExpenseWithParticipants>>
 
     @Transaction
     @Query("SELECT * FROM expenses ORDER BY created_at DESC")
-    suspend fun getAllExpensesWithParticipants(): List<ExpenseWithParticipants>
+    abstract suspend fun getAllExpensesWithParticipants(): List<ExpenseWithParticipants>
 
     // ── Balance aggregation queries ──
 
@@ -42,7 +57,7 @@ interface ExpenseDao {
         GROUP BY paid_by_user_id
     """
     )
-    suspend fun getTotalPaidPerUser(): List<UserAmountTuple>
+    abstract suspend fun getTotalPaidPerUser(): List<UserAmountTuple>
 
     /**
      * Total amount each user OWES across all expense participations.
@@ -55,7 +70,7 @@ interface ExpenseDao {
         GROUP BY participant_user_id
     """
     )
-    suspend fun getTotalOwedPerUser(): List<UserAmountTuple>
+    abstract suspend fun getTotalOwedPerUser(): List<UserAmountTuple>
 
     /**
      * Flow version: emits whenever expenses or participants change.
@@ -67,7 +82,7 @@ interface ExpenseDao {
         GROUP BY paid_by_user_id
     """
     )
-    fun getTotalPaidPerUserFlow(): Flow<List<UserAmountTuple>>
+    abstract fun getTotalPaidPerUserFlow(): Flow<List<UserAmountTuple>>
 
     @Query(
         """
@@ -76,7 +91,7 @@ interface ExpenseDao {
         GROUP BY participant_user_id
     """
     )
-    fun getTotalOwedPerUserFlow(): Flow<List<UserAmountTuple>>
+    abstract fun getTotalOwedPerUserFlow(): Flow<List<UserAmountTuple>>
 
     // ── Per-person queries ──
 
@@ -85,7 +100,7 @@ interface ExpenseDao {
      */
     @Transaction
     @Query("SELECT * FROM expenses WHERE paid_by_user_id = :userId ORDER BY created_at DESC")
-    suspend fun getExpensesPaidByUser(userId: Long): List<ExpenseWithParticipants>
+    abstract suspend fun getExpensesPaidByUser(userId: Long): List<ExpenseWithParticipants>
 
     /**
      * Get all expense_participant rows for a specific user.
@@ -98,7 +113,7 @@ interface ExpenseDao {
         WHERE ep.participant_user_id = :userId
     """
     )
-    suspend fun getParticipationsForUser(userId: Long): List<ParticipationTuple>
+    abstract suspend fun getParticipationsForUser(userId: Long): List<ParticipationTuple>
 }
 
 data class UserAmountTuple(

@@ -9,11 +9,4 @@ data class PersonSummary(
     val displayName: String,
     val netBalancePaise: Long,
     val settlements: List<SettlementSuggestion>
-) {
-    val formattedBalance: String
-        get() {
-            val rupees = netBalancePaise / 100.0
-            val sign = if (rupees >= 0) "+" else ""
-            return "$sign%.2f".format(rupees)
-        }
-}
+)

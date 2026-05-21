@@ -11,7 +11,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -20,63 +19,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.todoapppractice.ui.component.SplitBlue
 import com.example.todoapppractice.ui.component.TabItem
-import com.example.todoapppractice.ui.screen.add.AddExpenseScreen
-import com.example.todoapppractice.ui.screen.add.AddExpenseViewModel
-import com.example.todoapppractice.ui.screen.balances.BalanceScreen
-import com.example.todoapppractice.ui.screen.balances.BalancesViewModel
-import com.example.todoapppractice.ui.screen.history.HistoryScreen
-import com.example.todoapppractice.ui.screen.history.HistoryViewModel
-import com.example.todoapppractice.ui.state.UiEvent
-import org.koin.androidx.compose.koinViewModel
+import com.example.todoapppractice.ui.screen.add.AddExpenseTab
+import com.example.todoapppractice.ui.screen.balances.BalancesTab
+import com.example.todoapppractice.ui.screen.history.HistoryTab
 
+/**
+ * HomeScreen is now a thin shell:
+ * - Manages tab selection only
+ * - Each tab composable owns its own ViewModel and event collection
+ * - No VM references leak into this composable
+ */
 @Composable
 fun HomeScreen(
     onNavigateToPerson: (Long) -> Unit,
-    snackbarHostState: SnackbarHostState,
-    addExpenseViewModel: AddExpenseViewModel = koinViewModel(),
-    balancesViewModel: BalancesViewModel = koinViewModel(),
-    historyViewModel: HistoryViewModel = koinViewModel()
+    snackbarHostState: SnackbarHostState
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-
-    // Collect states
-    val addState by addExpenseViewModel.state.collectAsStateWithLifecycle()
-    val balances by balancesViewModel.balances.collectAsStateWithLifecycle()
-    val isSimplifyOn by balancesViewModel.isSimplifyOn.collectAsStateWithLifecycle()
-    val history by historyViewModel.history.collectAsStateWithLifecycle()
-
-    // Collect UI events from all VMs
-    LaunchedEffect(Unit) {
-        addExpenseViewModel.uiEvents.collect { event ->
-            when (event) {
-                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
-                is UiEvent.ExpenseAdded -> { /* stay on add tab or switch */ }
-                else -> {}
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        balancesViewModel.uiEvents.collect { event ->
-            when (event) {
-                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
-                is UiEvent.NavigateToPerson -> onNavigateToPerson(event.userId)
-                else -> {}
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        historyViewModel.uiEvents.collect { event ->
-            when (event) {
-                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
-                else -> {}
-            }
-        }
-    }
 
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -117,28 +77,14 @@ fun HomeScreen(
         }
 
         // ── Tab Content ──
+        // Each tab owns its own ViewModel + event handling
         when (selectedTab) {
-            0 -> AddExpenseScreen(
-                state = addState,
-                onExpenseNameChange = addExpenseViewModel::onExpenseNameChange,
-                onTotalChange = addExpenseViewModel::onTotalChange,
-                onPaidByChange = addExpenseViewModel::onPaidByChange,
-                onAddParticipant = addExpenseViewModel::addParticipant,
-                onParticipantChange = addExpenseViewModel::onParticipantChange,
-                onAddExpense = addExpenseViewModel::onAddExpenseClicked
+            0 -> AddExpenseTab(snackbarHostState = snackbarHostState)
+            1 -> BalancesTab(
+                snackbarHostState = snackbarHostState,
+                onNavigateToPerson = onNavigateToPerson
             )
-
-            1 -> BalanceScreen(
-                balances = balances,
-                isSimplifyOn = isSimplifyOn,
-                onPersonClicked = balancesViewModel::onPersonClicked,
-                onSimplifyToggle = balancesViewModel::onSimplifyToggleClicked
-            )
-
-            2 -> HistoryScreen(
-                history = history,
-                onDeleteItem = historyViewModel::onDeleteItem
-            )
+            2 -> HistoryTab(snackbarHostState = snackbarHostState)
         }
     }
 }

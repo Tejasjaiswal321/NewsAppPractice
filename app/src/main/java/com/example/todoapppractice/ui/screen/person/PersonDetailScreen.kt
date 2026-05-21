@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,6 +29,7 @@ import com.example.todoapppractice.domain.model.SettlementSuggestion
 import com.example.todoapppractice.ui.component.SplitBlue
 import com.example.todoapppractice.ui.component.SplitwiseTopBar
 import com.example.todoapppractice.ui.state.UiEvent
+import com.example.todoapppractice.ui.util.CurrencyFormatter
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -39,8 +41,7 @@ fun PersonDetailScreen(
     onSnackbar: (String) -> Unit,
     viewModel: PersonDetailViewModel = koinViewModel { parametersOf(userId) }
 ) {
-    val personSummary by viewModel.personSummary.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.uiEvents.collectLatest { event ->
@@ -61,10 +62,8 @@ fun PersonDetailScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        val personSummary = personSummary
-
-        when {
-            isLoading -> {
+        when (val state = uiState) {
+            is PersonUiState.Loading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -73,7 +72,7 @@ fun PersonDetailScreen(
                 }
             }
 
-            personSummary == null -> {
+            is PersonUiState.Empty -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -82,7 +81,21 @@ fun PersonDetailScreen(
                 }
             }
 
-            else -> {
+            is PersonUiState.Error -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = state.message,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            is PersonUiState.Success -> {
+                val person = state.person
+
                 // Person header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -96,10 +109,10 @@ fun PersonDetailScreen(
                             .padding(vertical = 12.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = personSummary.displayName)
+                        Text(text = person.displayName)
                     }
                     Text(
-                        text = personSummary.formattedBalance,
+                        text = CurrencyFormatter.formatBalance(person.netBalancePaise),
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -107,19 +120,17 @@ fun PersonDetailScreen(
                 Spacer(modifier = Modifier.height(30.dp))
 
                 // Settlement suggestions
-                if (personSummary.settlements.isEmpty()) {
+                if (person.settlements.isEmpty()) {
                     Text("All settled up!")
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         items(
-                            items = personSummary.settlements,
-                            key = { settlement ->
-                                "${settlement.fromUserId}_${settlement.toUserId}"
-                            }
+                            items = person.settlements,
+                            key = { "${it.fromUserId}_${it.toUserId}" }
                         ) { suggestion ->
                             SettlementRow(
                                 suggestion = suggestion,
-                                currentUserId = personSummary.userId,
+                                currentUserId = person.userId,
                                 onSettleClick = { viewModel.onSettleClicked(suggestion) }
                             )
                         }
@@ -137,10 +148,11 @@ private fun SettlementRow(
     onSettleClick: () -> Unit
 ) {
     val isCreditor = suggestion.toUserId == currentUserId
+    val formattedAmount = CurrencyFormatter.formatAmount(suggestion.amountPaise)
     val label = if (isCreditor) {
-        "Will get ${suggestion.formattedAmount} from"
+        "Will get $formattedAmount from"
     } else {
-        "Will pay ${suggestion.formattedAmount} to"
+        "Will pay $formattedAmount to"
     }
     val otherPersonName = if (isCreditor) suggestion.fromName else suggestion.toName
 

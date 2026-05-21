@@ -7,7 +7,7 @@ import com.example.todoapppractice.domain.model.PersonSummary
 import com.example.todoapppractice.domain.model.SettlementSuggestion
 
 /**
- * Get a specific person's balance personSummary and their individual
+ * Get a specific person's balance summary and their individual
  * settlement suggestions (who owes them / who they owe).
  *
  * Supports two modes:
@@ -53,64 +53,64 @@ class GetPersonSummaryUseCase(
     /**
      * Raw mode: compute actual pairwise debts from individual expenses.
      *
+     * Uses per-user filtered DAO queries (not full table scan) and
+     * pre-fetches user names into a map to avoid N+1 queries.
+     *
      * For each expense:
-     *   - If user X was the payer: each other participant owes X their share
-     *   - If user X was a participant (not payer): X owes the payer their share
+     *   - If this user was the payer: each other participant owes them their share
+     *   - If this user was a participant (not payer): they owe the payer their share
      *
      * Then subtract any existing settlement entries from the DB
      * (from individual "Settle" button clicks) to show remaining debts.
      */
     private suspend fun getRawPairwiseDebts(userId: Long): List<SettlementSuggestion> {
-        val allExpenses = expenseRepository.getAllExpensesWithParticipants()
+        // Pre-fetch all users into a map — eliminates N+1 getUserById() calls
+        val usersById = userRepository.getAllUsersById()
+        val myName = usersById[userId]?.displayName ?: "Unknown"
 
         // pairwiseDebts: otherUserId → net amount
         // Positive = other owes me, Negative = I owe other
         val pairwiseDebts = mutableMapOf<Long, Long>()
 
-        for (ewp in allExpenses) {
-            val expense = ewp.expense
-            val participants = ewp.participants
-
-            if (expense.paidByUserId == userId) {
-                // I paid → each other participant owes me their share
-                for (p in participants) {
-                    if (p.participantUserId != userId) {
-                        pairwiseDebts[p.participantUserId] =
-                            (pairwiseDebts[p.participantUserId] ?: 0L) + p.owedAmount
-                    }
-                }
-            } else {
-                // Someone else paid → check if I'm a participant
-                for (p in participants) {
-                    if (p.participantUserId == userId) {
-                        pairwiseDebts[expense.paidByUserId] =
-                            (pairwiseDebts[expense.paidByUserId] ?: 0L) - p.owedAmount
-                    }
+        // 1) Expenses I paid: each other participant owes me their share
+        val expensesPaidByMe = expenseRepository.getExpensesPaidByUser(userId)
+        for (ewp in expensesPaidByMe) {
+            for (p in ewp.participants) {
+                if (p.participantUserId != userId) {
+                    pairwiseDebts[p.participantUserId] =
+                        (pairwiseDebts[p.participantUserId] ?: 0L) + p.owedAmount
                 }
             }
         }
 
-        // Subtract existing settlements from DB (individual "Settle" clicks)
+        // 2) Expenses where I'm a participant (someone else paid): I owe the payer
+        val myParticipations = expenseRepository.getParticipationsForUser(userId)
+        for (p in myParticipations) {
+            if (p.paid_by_user_id != userId) {
+                pairwiseDebts[p.paid_by_user_id] =
+                    (pairwiseDebts[p.paid_by_user_id] ?: 0L) - p.owed_amount
+            }
+        }
+
+        // 3) Subtract existing settlements from DB (individual "Settle" clicks)
         val existingSettlements = balanceRepository.getAllSettlements()
         for (s in existingSettlements) {
             if (s.fromUserId == userId) {
-                // I paid someone → my debt to them decreases (my balance with them goes up)
+                // I paid someone → my debt to them decreases
                 pairwiseDebts[s.toUserId] =
                     (pairwiseDebts[s.toUserId] ?: 0L) + s.amount
             } else if (s.toUserId == userId) {
-                // Someone paid me → their debt to me decreases (my balance with them goes down)
+                // Someone paid me → their debt to me decreases
                 pairwiseDebts[s.fromUserId] =
                     (pairwiseDebts[s.fromUserId] ?: 0L) - s.amount
             }
         }
 
         // Convert to SettlementSuggestion list, filtering out zero-balance pairs
-        val myName = userRepository.getUserById(userId)?.displayName ?: "Unknown"
-
         return pairwiseDebts.mapNotNull { (otherUserId, amount) ->
             if (amount == 0L) return@mapNotNull null
 
-            val otherName = userRepository.getUserById(otherUserId)?.displayName ?: "Unknown"
+            val otherName = usersById[otherUserId]?.displayName ?: "Unknown"
 
             if (amount > 0) {
                 // Other owes me → they should pay me
