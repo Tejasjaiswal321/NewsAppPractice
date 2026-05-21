@@ -2,9 +2,9 @@ package com.example.todoapppractice.ui.screen.balances
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todoapppractice.data.datastore.SimplifyPreferences
 import com.example.todoapppractice.domain.model.UserBalance
 import com.example.todoapppractice.domain.usecase.GetBalancesUseCase
-import com.example.todoapppractice.domain.usecase.SimplifyBalancesUseCase
 import com.example.todoapppractice.ui.state.UiEvent
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 
 class BalancesViewModel(
     getBalancesUseCase: GetBalancesUseCase,
-    private val simplifyBalancesUseCase: SimplifyBalancesUseCase
+    private val simplifyPreferences: SimplifyPreferences
 ) : ViewModel() {
 
     val balances: StateFlow<List<UserBalance>> = getBalancesUseCase()
@@ -24,6 +24,13 @@ class BalancesViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
+        )
+
+    val isSimplifyOn: StateFlow<Boolean> = simplifyPreferences.isSimplifyOn
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
         )
 
     private val _uiEvents = MutableSharedFlow<UiEvent>()
@@ -35,14 +42,9 @@ class BalancesViewModel(
         }
     }
 
-    fun onSimplifyAllClicked() {
+    fun onSimplifyToggleClicked() {
         viewModelScope.launch {
-            val count = simplifyBalancesUseCase.execute()
-            if (count > 0) {
-                _uiEvents.emit(UiEvent.ShowSnackbar("Created $count settlements"))
-            } else {
-                _uiEvents.emit(UiEvent.ShowSnackbar("All balances already settled"))
-            }
+            simplifyPreferences.toggleSimplify()
         }
     }
 }

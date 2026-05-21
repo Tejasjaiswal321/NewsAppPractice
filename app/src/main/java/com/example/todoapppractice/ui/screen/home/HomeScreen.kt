@@ -45,6 +45,7 @@ fun HomeScreen(
     // Collect states
     val addState by addExpenseViewModel.state.collectAsStateWithLifecycle()
     val balances by balancesViewModel.balances.collectAsStateWithLifecycle()
+    val isSimplifyOn by balancesViewModel.isSimplifyOn.collectAsStateWithLifecycle()
     val history by historyViewModel.history.collectAsStateWithLifecycle()
 
     // Collect UI events from all VMs
@@ -129,8 +130,9 @@ fun HomeScreen(
 
             1 -> BalanceScreen(
                 balances = balances,
+                isSimplifyOn = isSimplifyOn,
                 onPersonClicked = balancesViewModel::onPersonClicked,
-                onSimplifyAll = balancesViewModel::onSimplifyAllClicked
+                onSimplifyToggle = balancesViewModel::onSimplifyToggleClicked
             )
 
             2 -> HistoryScreen(

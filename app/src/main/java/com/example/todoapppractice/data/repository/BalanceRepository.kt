@@ -115,7 +115,7 @@ class BalanceRepository(
             val totalSettledTo = settledToMap[userId] ?: 0L
 
             // net = what I paid - what I owe + what others settled to me - what I settled to others
-            val net = totalPaid - totalOwed + totalSettledTo - totalSettledFrom
+            val net = totalPaid - totalOwed + totalSettledFrom - totalSettledTo
 
             UserBalance(
                 userId = userId,

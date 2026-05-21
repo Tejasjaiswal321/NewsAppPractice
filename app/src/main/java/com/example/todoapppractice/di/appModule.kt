@@ -2,6 +2,7 @@ package com.example.todoapppractice.di
 
 import androidx.room.Room
 import com.example.todoapppractice.data.db.SplitwiseDatabase
+import com.example.todoapppractice.data.datastore.SimplifyPreferences
 import com.example.todoapppractice.data.repository.BalanceRepository
 import com.example.todoapppractice.data.repository.ExpenseRepository
 import com.example.todoapppractice.data.repository.UserRepository
@@ -42,13 +43,16 @@ val appModule = module {
     single { ExpenseRepository(get()) }
     single { BalanceRepository(get(), get(), get()) }
 
+    // ── DataStore ──
+    single { SimplifyPreferences(androidContext()) }
+
     // ── UseCases ──
     factory { AddExpenseUseCase(get(), get()) }
     factory { GetBalancesUseCase(get()) }
     factory { SimplifyBalancesUseCase(get()) }
     factory { DeleteExpenseUseCase(get()) }
     factory { DeleteSettlementUseCase(get()) }
-    factory { GetPersonSummaryUseCase(get()) }
+    factory { GetPersonSummaryUseCase(get(), get(), get()) }
     factory { SettleBalanceUseCase(get()) }
     factory { GetHistoryUseCase(get(), get(), get()) }
 
@@ -56,5 +60,5 @@ val appModule = module {
     viewModel { AddExpenseViewModel(get()) }
     viewModel { BalancesViewModel(get(), get()) }
     viewModel { HistoryViewModel(get(), get(), get()) }
-    viewModel { params -> PersonDetailViewModel(params.get(), get(), get()) }
+    viewModel { params -> PersonDetailViewModel(params.get(), get(), get(), get()) }
 }

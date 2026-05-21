@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -26,6 +28,7 @@ import com.example.todoapppractice.domain.model.SettlementSuggestion
 import com.example.todoapppractice.ui.component.SplitBlue
 import com.example.todoapppractice.ui.component.SplitwiseTopBar
 import com.example.todoapppractice.ui.state.UiEvent
+import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -36,11 +39,11 @@ fun PersonDetailScreen(
     onSnackbar: (String) -> Unit,
     viewModel: PersonDetailViewModel = koinViewModel { parametersOf(userId) }
 ) {
-    val summary by viewModel.summary.collectAsStateWithLifecycle()
+    val personSummary by viewModel.personSummary.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        viewModel.uiEvents.collect { event ->
+        viewModel.uiEvents.collectLatest { event ->
             when (event) {
                 is UiEvent.ShowSnackbar -> onSnackbar(event.message)
                 is UiEvent.NavigateBack -> onBack()
@@ -58,61 +61,70 @@ fun PersonDetailScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+        val personSummary = personSummary
+
+        when {
+            isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
             }
-            return
-        }
 
-        val person = summary
-        if (person == null) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Person not found")
+            personSummary == null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Person not found")
+                }
             }
-            return
-        }
 
-        // Person header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(180.dp)
-                    .background(SplitBlue)
-                    .padding(vertical = 12.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = person.displayName)
-            }
-            Text(
-                text = person.formattedBalance,
-                fontWeight = FontWeight.Bold
-            )
-        }
+            else -> {
+                // Person header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(180.dp)
+                            .background(SplitBlue)
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = personSummary.displayName)
+                    }
+                    Text(
+                        text = personSummary.formattedBalance,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
-        Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(30.dp))
 
-        // Settlement suggestions
-        if (person.settlements.isEmpty()) {
-            Text("All settled up!")
-        } else {
-            person.settlements.forEach { suggestion ->
-                SettlementRow(
-                    suggestion = suggestion,
-                    currentUserId = person.userId,
-                    onSettleClick = { viewModel.onSettleClicked(suggestion) }
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+                // Settlement suggestions
+                if (personSummary.settlements.isEmpty()) {
+                    Text("All settled up!")
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        items(
+                            items = personSummary.settlements,
+                            key = { settlement ->
+                                "${settlement.fromUserId}_${settlement.toUserId}"
+                            }
+                        ) { suggestion ->
+                            SettlementRow(
+                                suggestion = suggestion,
+                                currentUserId = personSummary.userId,
+                                onSettleClick = { viewModel.onSettleClicked(suggestion) }
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -138,13 +150,13 @@ private fun SettlementRow(
         Box(
             modifier = Modifier
                 .background(SplitBlue)
-                .padding(horizontal = 24.dp, vertical = 10.dp)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
             Text(otherPersonName)
         }
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.weight(1f))
         Button(onClick = onSettleClick) {
-            Text("SETTLE")
+            Text("Settle")
         }
     }
 }
