@@ -64,15 +64,4 @@ interface SettlementDao {
     )
     fun getTotalSettledToPerUserFlow(): Flow<List<UserAmountTuple>>
 
-    /**
-     * Settlements involving a specific user (as payer or receiver).
-     */
-    @Query(
-        """
-        SELECT * FROM settlements
-        WHERE from_user_id = :userId OR to_user_id = :userId
-        ORDER BY created_at DESC
-    """
-    )
-    suspend fun getSettlementsForUser(userId: Long): List<SettlementEntity>
 }

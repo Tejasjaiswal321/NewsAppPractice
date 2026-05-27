@@ -51,8 +51,6 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
     fun getExpenseHistoryFlow(): Flow<List<ExpenseWithParticipants>> =
         expenseDao.getAllExpensesWithParticipantsFlow()
 
-    suspend fun getAllExpensesWithParticipants(): List<ExpenseWithParticipants> =
-        expenseDao.getAllExpensesWithParticipants()
 
     /** Get all expenses paid by a specific user (with their participants). */
     suspend fun getExpensesPaidByUser(userId: Long): List<ExpenseWithParticipants> =

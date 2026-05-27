@@ -33,5 +33,3 @@ generated/
 
 # Firebase / Google Services (optional)
 google-services.json
-
-.DS_Store

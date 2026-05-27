@@ -23,7 +23,9 @@ fun AddExpenseTab(
         viewModel.uiEvents.collect { event ->
             when (event) {
                 is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
-                is UiEvent.ExpenseAdded -> { /* stay on add tab */ }
+                is UiEvent.ExpenseAdded -> { /* stay on add tab */
+                }
+
                 else -> {}
             }
         }

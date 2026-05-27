@@ -35,8 +35,4 @@ class UserRepository(private val userDao: UserDao) {
     suspend fun getAllUsersById(): Map<Long, UserEntity> =
         userDao.getAll().associateBy { it.userId }
 
-    suspend fun getUserByName(displayName: String): UserEntity? {
-        val normalized = normalizeName(displayName)
-        return userDao.getByNormalizedName(normalized)
-    }
 }

@@ -23,9 +23,9 @@ import kotlinx.coroutines.launch
  * (e.g. loading=true + data!=null, or loading=false + data=null).
  */
 sealed interface PersonUiState {
-    object Loading : PersonUiState
+    data object Loading : PersonUiState
     data class Success(val person: PersonSummary) : PersonUiState
-    object Empty : PersonUiState
+    data object Empty : PersonUiState
     data class Error(val message: String) : PersonUiState
 }
 

@@ -1,6 +1,5 @@
 package com.example.todoapppractice.domain.usecase
 
-import com.example.todoapppractice.data.db.entity.SettlementEntity
 import com.example.todoapppractice.data.repository.BalanceRepository
 import com.example.todoapppractice.domain.model.SettlementSuggestion
 import com.example.todoapppractice.domain.model.UserBalance
@@ -17,35 +16,6 @@ import com.example.todoapppractice.domain.model.UserBalance
 class SimplifyBalancesUseCase(
     private val balanceRepository: BalanceRepository
 ) {
-
-    /**
-     * Compute settlement suggestions without persisting.
-     */
-    suspend fun computeSuggestions(): List<SettlementSuggestion> {
-        val balances = balanceRepository.getBalances()
-        return generateSettlements(balances)
-    }
-
-    /**
-     * Persist the simplification as settlement entries.
-     * Returns number of settlements created.
-     */
-    suspend fun execute(): Int {
-        val suggestions = computeSuggestions()
-        if (suggestions.isEmpty()) return 0
-
-        val now = System.currentTimeMillis()
-        val entities = suggestions.map { s ->
-            SettlementEntity(
-                fromUserId = s.fromUserId,
-                toUserId = s.toUserId,
-                amount = s.amountPaise,
-                createdAt = now
-            )
-        }
-        balanceRepository.insertSettlements(entities)
-        return entities.size
-    }
 
     companion object {
 
@@ -76,7 +46,7 @@ class SimplifyBalancesUseCase(
             for (debtor in debtors) {
                 val absAmount = -debtor.balancePaise  // positive
                 val matches = creditorsByAmount[absAmount]
-                if (matches != null && matches.isNotEmpty()) {
+                if (!matches.isNullOrEmpty()) {
                     val creditor = matches.removeFirst()
                     if (matches.isEmpty()) creditorsByAmount.remove(absAmount)
 

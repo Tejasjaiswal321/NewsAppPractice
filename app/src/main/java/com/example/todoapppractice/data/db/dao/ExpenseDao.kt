@@ -40,9 +40,6 @@ abstract class ExpenseDao {
     @Query("SELECT * FROM expenses ORDER BY created_at DESC")
     abstract fun getAllExpensesWithParticipantsFlow(): Flow<List<ExpenseWithParticipants>>
 
-    @Transaction
-    @Query("SELECT * FROM expenses ORDER BY created_at DESC")
-    abstract suspend fun getAllExpensesWithParticipants(): List<ExpenseWithParticipants>
 
     // ── Balance aggregation queries ──
 

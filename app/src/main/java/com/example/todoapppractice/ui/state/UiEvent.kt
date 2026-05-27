@@ -7,6 +7,6 @@ package com.example.todoapppractice.ui.state
 sealed interface UiEvent {
     data class ShowSnackbar(val message: String) : UiEvent
     data class NavigateToPerson(val userId: Long) : UiEvent
-    object NavigateBack : UiEvent
-    object ExpenseAdded : UiEvent
+    data object NavigateBack : UiEvent
+    data object ExpenseAdded : UiEvent
 }
