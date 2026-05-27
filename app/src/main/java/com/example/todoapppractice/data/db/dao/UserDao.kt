@@ -26,8 +26,8 @@ interface UserDao {
     suspend fun getAll(): List<UserEntity>
 
     /**
-     * Get or create a user by display name.
-     * Returns the user_id (existing or newly inserted).
+     * Returns existing user_id for normalized name,
+     * or null if user does not exist.
      */
     @Query("SELECT user_id FROM users WHERE normalized_name = :normalizedName LIMIT 1")
     suspend fun getUserIdByNormalizedName(normalizedName: String): Long?
