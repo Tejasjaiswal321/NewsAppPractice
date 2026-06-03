@@ -21,7 +21,7 @@ class BalanceRepository(
      * Combines expense credits/debits + settlement credits/debits.
      *
      * Formula per user:
-     *   net = (total_paid) - (total_owed) + (total_settled_to_me) - (total_settled_from_me)
+     *   net = (total_paid) - (total_owed) + (total_settled_from_me) - (total_settled_to_me)
      */
     fun getBalancesFlow(): Flow<List<UserBalance>> = combine(
         expenseDao.getTotalPaidPerUserFlow(),
@@ -41,7 +41,6 @@ class BalanceRepository(
         val owed = expenseDao.getTotalOwedPerUser()
         val settledFrom = settlementDao.getTotalSettledFromPerUser()
         val settledTo = settlementDao.getTotalSettledToPerUser()
-        val users = mutableMapOf<Long, UserEntity>()
 
         // Collect all user IDs and fetch their entities
         val allUserIds = (paid.map { it.userId } +
@@ -49,9 +48,9 @@ class BalanceRepository(
                 settledFrom.map { it.userId } +
                 settledTo.map { it.userId }).toSet()
 
-        for (id in allUserIds) {
-            userDao.getById(id)?.let { users[id] = it }
-        }
+        val users = userDao
+            .getByIds(allUserIds.toList())
+            .associateBy { it.userId }
 
         return computeBalancesFromMaps(
             paidMap = paid.associate { it.userId to it.totalAmount },
@@ -64,9 +63,6 @@ class BalanceRepository(
 
     suspend fun insertSettlement(settlement: SettlementEntity): Long =
         settlementDao.insert(settlement)
-
-    suspend fun insertSettlements(settlements: List<SettlementEntity>) =
-        settlementDao.insertAll(settlements)
 
     suspend fun deleteSettlement(settlementId: Long) =
         settlementDao.delete(settlementId)
@@ -104,7 +100,7 @@ class BalanceRepository(
         usersMap: Map<Long, UserEntity>
     ): List<UserBalance> {
         val allUserIds = (paidMap.keys + owedMap.keys +
-                settledFromMap.keys + settledToMap.keys)
+                settledFromMap.keys + settledToMap.keys + usersMap.keys)
 
         return allUserIds.mapNotNull { userId ->
             val user = usersMap[userId] ?: return@mapNotNull null

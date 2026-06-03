@@ -19,6 +19,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE user_id = :userId")
     suspend fun getById(userId: Long): UserEntity?
 
+    @Query("SELECT * FROM users WHERE user_id IN (:ids)")
+    suspend fun getByIds(ids: List<Long>): List<UserEntity>
+
     @Query("SELECT * FROM users ORDER BY display_name ASC")
     fun getAllFlow(): Flow<List<UserEntity>>
 

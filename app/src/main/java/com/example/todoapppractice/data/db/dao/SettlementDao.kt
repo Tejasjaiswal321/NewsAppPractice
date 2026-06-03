@@ -12,9 +12,6 @@ interface SettlementDao {
     @Insert
     suspend fun insert(settlement: SettlementEntity): Long
 
-    @Insert
-    suspend fun insertAll(settlements: List<SettlementEntity>)
-
     @Query("DELETE FROM settlements WHERE settlement_id = :settlementId")
     suspend fun delete(settlementId: Long)
 

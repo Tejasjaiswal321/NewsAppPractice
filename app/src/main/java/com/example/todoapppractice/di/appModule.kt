@@ -49,7 +49,7 @@ val appModule = module {
     // ── UseCases ──
     factory { AddExpenseUseCase(get(), get()) }
     factory { GetBalancesUseCase(get()) }
-    factory { SimplifyBalancesUseCase(get()) }
+    factory { SimplifyBalancesUseCase() }
     factory { DeleteExpenseUseCase(get()) }
     factory { DeleteSettlementUseCase(get()) }
     factory { GetPersonSummaryUseCase(get(), get(), get()) }

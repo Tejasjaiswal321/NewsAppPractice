@@ -31,11 +31,9 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
             createdAt = createdAt
         )
 
-        // expenseId=0 is a placeholder; the DAO's @Transaction method
-        // replaces it with the real auto-generated ID before inserting.
+        // the DAO's @Transaction method  replaces expenseId=0 with the real auto-generated ID before inserting.
         val participantEntities = participantShares.map { (userId, owedAmount) ->
             ExpenseParticipantEntity(
-                expenseId = 0,
                 participantUserId = userId,
                 owedAmount = owedAmount
             )

@@ -33,7 +33,7 @@ data class ExpenseParticipantEntity(
     val expenseParticipantId: Long = 0,
 
     @ColumnInfo(name = "expense_id")
-    val expenseId: Long,
+    val expenseId: Long = 0,
 
     @ColumnInfo(name = "participant_user_id")
     val participantUserId: Long,

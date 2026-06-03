@@ -1,6 +1,5 @@
 package com.example.todoapppractice.domain.usecase
 
-import com.example.todoapppractice.data.repository.BalanceRepository
 import com.example.todoapppractice.domain.model.SettlementSuggestion
 import com.example.todoapppractice.domain.model.UserBalance
 
@@ -13,9 +12,7 @@ import com.example.todoapppractice.domain.model.UserBalance
  * 3. Greedy two-pointer settlement on remaining
  * 4. Persist settlement rows (append-only, never mutate expenses)
  */
-class SimplifyBalancesUseCase(
-    private val balanceRepository: BalanceRepository
-) {
+class SimplifyBalancesUseCase {
 
     companion object {
 
