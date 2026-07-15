@@ -121,3 +121,7 @@ class BalanceRepository(
         }.sortedByDescending { it.balancePaise }
     }
 }
+
+/* Todo()
+* refactor settlement out of BalanceRepo?
+* */
